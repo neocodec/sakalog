@@ -494,7 +494,7 @@
                 <div class="space-y-2 border-t border-slate-855 pt-3">
                     <span class="text-[11px] text-slate-400 font-bold">動作設定:</span>
                     <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
-                        <input type="checkbox" id="chk-show-modal-on-record" class="rounded bg-slate-900 border-slate-750 text-emerald-500 focus:ring-emerald-500 w-4 h-4">
+                        <input type="checkbox" id="chk-show-modal-on-record" checked class="rounded bg-slate-900 border-slate-750 text-emerald-500 focus:ring-emerald-500 w-4 h-4">
                         <span>ボタン押下時に詳細入力画面を表示</span>
                     </label>
                 </div>
@@ -567,12 +567,12 @@
     </div>
 
     <!-- 📝 新規記録入力モーダル -->
-    <div id="record-modal" class="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-[65] hidden">
-        <div class="bg-slate-850 border border-slate-700 p-4 rounded-2xl max-w-md w-full shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-200">
+    <div id="record-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-[65] hidden">
+        <div id="record-modal-card" class="bg-slate-800 border border-slate-700 p-4 rounded-2xl max-w-md w-full shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-200">
             <div class="flex items-center justify-between border-b border-slate-700 pb-2">
-                <div class="flex items-center gap-2 text-emerald-400 font-extrabold text-sm sm:text-base">
+                <div class="flex items-center gap-2 text-emerald-400 font-extrabold text-sm sm:text-base" id="record-modal-header-title">
                     <i data-lucide="plus-circle" class="w-5 h-5"></i>
-                    <span>プレーの記録</span>
+                    <span id="record-modal-title-text">プレーの記録</span>
                 </div>
                 <button onclick="closeRecordModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition active:scale-90">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -773,6 +773,9 @@
         const domRecordModalTextarea = document.getElementById('record-modal-textarea');
         const domRecordModalTagsContainer = document.getElementById('record-modal-tags-container');
         const domRecordModalSaveBtn = document.getElementById('record-modal-save-btn');
+        const domRecordModalCard = document.getElementById('record-modal-card');
+        const domRecordModalHeaderTitle = document.getElementById('record-modal-header-title');
+        const domRecordModalTitleText = document.getElementById('record-modal-title-text');
 
         // 全画面表示用 DOM
         const domFullLogModal = document.getElementById('full-log-modal');
@@ -1365,6 +1368,16 @@
             pendingRecord.playerNumber = "";
             pendingRecord.memo = "";
 
+            if (domRecordModalCard) {
+                domRecordModalCard.style.borderTop = `4px solid ${pendingRecord.teamColor}`;
+            }
+            if (domRecordModalHeaderTitle) {
+                domRecordModalHeaderTitle.style.color = pendingRecord.teamColor;
+            }
+            if (domRecordModalTitleText) {
+                domRecordModalTitleText.innerText = `${pendingRecord.teamName}`;
+            }
+
             domRecordModalTime.innerText = pendingRecord.gameTime;
             domRecordModalTeam.innerText = pendingRecord.teamName;
             domRecordModalEvent.innerText = pendingRecord.eventName;
@@ -1394,6 +1407,11 @@
             // 優先度の星構築
             renderRecordModalStars(pendingRecord.priority);
 
+            // 「記録する」ボタンの背景色をチームカラーに設定
+            if (domRecordModalSaveBtn) {
+                domRecordModalSaveBtn.style.backgroundColor = pendingRecord.teamColor;
+            }
+
             // タグの構築
             domRecordModalTagsContainer.innerHTML = QUICK_TAGS.map(tag => `
                 <button onclick="addTagToRecordMemo('${tag}')" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 border border-slate-650 px-2 py-1 rounded-lg text-[10px] font-semibold transition">
@@ -1401,13 +1419,32 @@
                 </button>
             `).join('');
 
+            // フォーカス枠線の適用処理
+            const applyFocusBorder = (el) => {
+                el.addEventListener('focus', () => {
+                    el.style.borderColor = pendingRecord.teamColor;
+                    el.style.boxShadow = `0 0 0 2px ${pendingRecord.teamColor}33`;
+                });
+                el.addEventListener('blur', () => {
+                    el.style.borderColor = '';
+                    el.style.boxShadow = '';
+                });
+            };
+
+            if (domRecordModalTextarea) {
+                applyFocusBorder(domRecordModalTextarea);
+            }
+
             domRecordModal.classList.remove('hidden');
             setTimeout(() => {
                 const input = document.getElementById('record-modal-player-input');
-                if (input) input.focus();
-                else {
-                    const select = document.getElementById('record-modal-player-select');
-                    if (select) select.focus();
+                const select = document.getElementById('record-modal-player-select');
+                if (input) {
+                    applyFocusBorder(input);
+                    input.focus();
+                } else if (select) {
+                    applyFocusBorder(select);
+                    select.focus();
                 }
             }, 100);
         };
@@ -1419,11 +1456,13 @@
 
         window.renderRecordModalStars = function(priority) {
             let starsHtml = "";
+            const activeColor = pendingRecord ? pendingRecord.teamColor : '#fbbf24';
             for (let i = 1; i <= 5; i++) {
-                const activeClass = i <= priority ? 'text-amber-400 fill-amber-400' : 'text-slate-600';
+                const styleAttr = i <= priority ? `style="color: ${activeColor}; fill: ${activeColor};"` : '';
+                const activeClass = i <= priority ? '' : 'text-slate-600';
                 starsHtml += `
                     <button onclick="setRecordPriority(${i})" class="focus:outline-none hover:scale-125 transition">
-                        <svg class="w-5 h-5 ${activeClass}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="w-5 h-5 ${activeClass}" ${styleAttr} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                         </svg>
                     </button>
@@ -1967,10 +2006,6 @@
                     domColorTeamA.value = teamAColor;
                     domColorTeamB.value = teamBColor;
 
-                    if (domChkShowModalOnRecord) {
-                        domChkShowModalOnRecord.checked = showModalOnRecord;
-                    }
-
                     // 選手データの読み込み状態をラベルに反映
                     const countA = Object.keys(playersA).length;
                     const countB = Object.keys(playersB).length;
@@ -1990,6 +2025,9 @@
                 } catch(e) {
                     console.error("ストレージ読み込み失敗:", e);
                 }
+            }
+            if (domChkShowModalOnRecord) {
+                domChkShowModalOnRecord.checked = showModalOnRecord;
             }
         }
 
