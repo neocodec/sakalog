@@ -28,6 +28,11 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #475569;
         }
+        
+        /* 全画面表示用テーブルのソートアイコン */
+        .sort-icon::after { content: ' ⇅'; opacity: 0.3; font-size: 0.8em; }
+        .sort-asc::after { content: ' ↑'; opacity: 1; color: #34d399; }
+        .sort-desc::after { content: ' ↓'; opacity: 1; color: #34d399; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-white overflow-x-hidden">
@@ -286,7 +291,12 @@
                     <i data-lucide="list-ordered" class="text-emerald-400 w-4 h-4"></i>
                     <h2 class="text-xs sm:text-sm font-bold">ダイジェストログ (<span id="log-count">0</span>)</h2>
                 </div>
+                <!-- ログ表示オプション & 全画面ボタン -->
                 <div class="flex items-center gap-3 text-[10px] sm:text-[11px] text-slate-400">
+                    <button onclick="openFullLogModal()" class="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded transition active:scale-95 mr-1">
+                        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                        <span>全画面表示</span>
+                    </button>
                     <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200 transition">
                         <input type="checkbox" id="chk-auto-scroll" checked class="rounded bg-slate-900 border-slate-750 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5">
                         <span>自動スクロール</span>
@@ -335,6 +345,61 @@
     <footer class="bg-slate-950 text-slate-650 text-[10px] py-4 border-t border-slate-900 text-center px-4 mt-auto w-full">
         <p>サカログ | ©︎n.e.o 2026</p>
     </footer>
+
+    <!-- 📊 全画面ログ表示モーダル (アプリ内分析機能) -->
+    <div id="full-log-modal" class="fixed inset-0 bg-slate-900 z-[60] hidden flex-col font-sans">
+        <div class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-3">
+                <i data-lucide="table" class="text-emerald-400 w-5 h-5"></i>
+                <h2 class="text-base sm:text-lg font-bold text-slate-100">ダイジェストログ全画面表示</h2>
+            </div>
+            <button onclick="closeFullLogModal()" class="text-slate-400 hover:text-white p-2 rounded-lg transition active:scale-90 bg-slate-700 hover:bg-slate-600">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-4 bg-slate-850 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-slate-700">
+            <div class="flex items-center gap-3">
+                <label for="full-star-filter" class="text-sm font-bold text-slate-400">表示フィルタ:</label>
+                <select id="full-star-filter" onchange="filterFullTable()" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm font-bold rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block px-3 py-1.5 cursor-pointer">
+                    <option value="0">すべてのログを表示</option>
+                    <option value="5">⭐️ 5のみ</option>
+                    <option value="4">⭐️ 4以上</option>
+                    <option value="3">⭐️ 3以上</option>
+                    <option value="2">⭐️ 2以上</option>
+                </select>
+            </div>
+            <div class="bg-slate-950 px-4 py-1.5 rounded-full border border-slate-700 text-sm sm:text-base font-mono flex items-center gap-3 shadow-inner">
+                <span class="font-bold text-blue-400" id="full-team-a"></span>
+                <span class="text-emerald-400 font-extrabold text-lg" id="full-score">0 - 0</span>
+                <span class="font-bold text-red-400" id="full-team-b"></span>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-auto bg-slate-900 p-2 sm:p-4">
+            <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden h-full flex flex-col">
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left border-collapse min-w-[850px]">
+                        <thead>
+                            <tr class="bg-slate-950 text-slate-300 text-xs sm:text-sm uppercase tracking-wider border-b border-slate-700 sticky top-0 z-10">
+                                <th class="py-3 px-4 sort-icon whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(0, this)">No.</th>
+                                <th class="py-3 px-4 sort-icon whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(1, this)">試合時間</th>
+                                <th class="py-3 px-4 sort-icon whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(2, this)">日本時間</th>
+                                <th class="py-3 px-4 sort-icon whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(3, this)">チーム</th>
+                                <th class="py-3 px-4 sort-icon text-center whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(4, this)">ゼッケン</th>
+                                <th class="py-3 px-4 sort-icon whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(5, this)">プレー</th>
+                                <th class="py-3 px-4 sort-icon whitespace-nowrap cursor-pointer hover:bg-slate-800 transition select-none" onclick="sortFullTable(6, this)">優先度</th>
+                                <th class="py-3 px-4 whitespace-nowrap">詳細メモ (ソート不可)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="full-table-body" class="text-xs sm:text-sm divide-y divide-slate-700 bg-slate-800">
+                            <!-- JSで生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ⚙️ 設定・書き出しモーダル -->
     <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
@@ -534,6 +599,11 @@
         const domMemoModalTagsContainer = document.getElementById('memo-modal-tags-container');
         const domMemoModalSaveBtn = document.getElementById('memo-modal-save-btn');
 
+        // 全画面表示用 DOM
+        const domFullLogModal = document.getElementById('full-log-modal');
+        const domFullTableBody = document.getElementById('full-table-body');
+        const domFullStarFilter = document.getElementById('full-star-filter');
+
         // 音声フィードバック用のAudioContext
         let audioCtx = null;
 
@@ -551,7 +621,8 @@
         });
 
         // --- システム・ヘルパー処理 ---
-        // Beep音を鳴らす関数
+
+        // 心地よいBeep音を鳴らす関数 (サイン波 + アタック/リリース)
         function playBeep() {
             try {
                 if (!audioCtx) {
@@ -567,27 +638,28 @@
                 const gainNode = audioCtx.createGain();
 
                 oscillator.type = 'sine';
-                // 短く高い音で邪魔にならないように調整
-                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                // 少し低めで柔らかい音 (600Hz)
+                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
                 
-                // 音量減衰 (0.1秒でフェードアウト)
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                // 音量エンベロープ（アタックを少し丸め、リリースを自然にフェードアウト）
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.02); // 立ち上がり
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); // フェードアウト
 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.1);
+                oscillator.stop(audioCtx.currentTime + 0.15);
             } catch (e) {
                 console.error("Beep音の再生に失敗しました:", e);
             }
         }
 
-        // バイブレーションを鳴らす関数
+        // 確実なバイブレーション (タタッという短いダブルタップ)
         function playVibrate() {
             if ('vibrate' in navigator) {
-                navigator.vibrate(30); // 30ミリ秒の短い振動
+                navigator.vibrate([40, 30, 40]);
             }
         }
 
@@ -912,6 +984,11 @@
             domLogList.insertAdjacentHTML('beforeend', rowsHtml);
             
             lucide.createIcons();
+            
+            // もし全画面モーダルが開いていたら同期更新する
+            if (!domFullLogModal.classList.contains('hidden')) {
+                renderFullLogTable();
+            }
         }
 
         // --- メモ編集関連 ---
@@ -993,6 +1070,97 @@
                 renderLogs();
                 showToast("記録を削除しました");
             }
+        };
+
+        // --- 全画面表示（アプリ内詳細分析）ロジック ---
+        let fullSortCol = -1;
+        let fullSortAsc = true;
+
+        window.openFullLogModal = function() {
+            document.getElementById('full-team-a').innerText = teamAName;
+            document.getElementById('full-team-b').innerText = teamBName;
+            document.getElementById('full-score').innerText = `${scoreA} - ${scoreB}`;
+            
+            domFullStarFilter.value = "0";
+            fullSortCol = -1;
+            fullSortAsc = true;
+            document.querySelectorAll('#full-log-modal th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+
+            renderFullLogTable();
+            domFullLogModal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeFullLogModal = function() {
+            domFullLogModal.classList.add('hidden');
+        };
+
+        function renderFullLogTable() {
+            if (matchLogs.length === 0) {
+                domFullTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-500 font-bold">記録されたプレーがありません。</td></tr>`;
+                return;
+            }
+
+            const filterValue = parseInt(domFullStarFilter.value, 10);
+            
+            let logsHtml = matchLogs.map((log, index) => {
+                if (filterValue > 0 && log.priority < filterValue) return '';
+
+                const stars = '★'.repeat(log.priority) + '☆'.repeat(5 - log.priority);
+                return `
+                <tr class="hover:bg-slate-700/50 transition bg-slate-800">
+                    <td class="py-2.5 px-4 text-slate-400 font-mono">${index + 1}</td>
+                    <td class="py-2.5 px-4 font-mono text-emerald-400 font-bold">${log.gameTime}</td>
+                    <td class="py-2.5 px-4 font-mono text-slate-400">${log.realTime}</td>
+                    <td class="py-2.5 px-4"><span style="color: ${log.teamColor}; font-weight: 900;">${log.teamName}</span></td>
+                    <td class="py-2.5 px-4 text-center font-mono font-bold text-slate-200">${log.playerNumber || ''}</td>
+                    <td class="py-2.5 px-4 font-bold text-slate-100">${log.eventName}</td>
+                    <td class="py-2.5 px-4 text-amber-400 text-lg tracking-widest">${stars}</td>
+                    <td class="py-2.5 px-4 text-slate-300 text-sm break-words">${log.memo}</td>
+                </tr>`;
+            }).join('');
+
+            domFullTableBody.innerHTML = logsHtml;
+        }
+
+        window.filterFullTable = function() {
+            const filterValue = parseInt(domFullStarFilter.value, 10);
+            const rows = domFullTableBody.querySelectorAll('tr');
+
+            rows.forEach(row => {
+                const priorityCell = row.children[6];
+                if(!priorityCell) return;
+                const starCount = priorityCell.innerText.replace(/[^★]/g, '').length;
+                row.style.display = (filterValue === 0 || starCount >= filterValue) ? '' : 'none';
+            });
+        };
+
+        window.sortFullTable = function(colIdx, thElement) {
+            const rows = Array.from(domFullTableBody.querySelectorAll('tr'));
+            if(rows.length === 0 || (rows.length === 1 && rows[0].children.length === 1)) return;
+
+            document.querySelectorAll('#full-log-modal th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+
+            if (fullSortCol === colIdx) fullSortAsc = !fullSortAsc;
+            else { fullSortCol = colIdx; fullSortAsc = true; }
+            
+            thElement.classList.add(fullSortAsc ? 'sort-asc' : 'sort-desc');
+            
+            rows.sort((a, b) => {
+                let valA = a.children[colIdx].innerText.trim();
+                let valB = b.children[colIdx].innerText.trim();
+                
+                if (colIdx === 0) { valA = parseInt(valA, 10); valB = parseInt(valB, 10); }
+                else if (colIdx === 4) { valA = valA ? parseInt(valA, 10) : -1; valB = valB ? parseInt(valB, 10) : -1; }
+                else if (colIdx === 6) { valA = valA.replace(/[^★]/g, '').length; valB = valB.replace(/[^★]/g, '').length; }
+                
+                if (valA < valB) return fullSortAsc ? -1 : 1;
+                if (valA > valB) return fullSortAsc ? 1 : -1;
+                return 0;
+            });
+            
+            domFullTableBody.innerHTML = '';
+            rows.forEach(r => domFullTableBody.appendChild(r));
         };
 
         // --- ローカルストレージ ---
