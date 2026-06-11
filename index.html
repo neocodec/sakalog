@@ -98,7 +98,12 @@
             <!-- チームA 操作パネル -->
             <div id="panel-team-a" class="bg-slate-800/90 border-t-4 border-blue-500 rounded-2xl p-2.5 sm:p-4 shadow-lg flex flex-col gap-3">
                 <div class="flex justify-between items-center pb-1.5 border-b border-slate-700">
-                    <h2 id="label-team-a" class="text-base sm:text-lg font-black text-blue-400 truncate max-w-[150px]">チームA</h2>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <h2 id="label-team-a" class="text-base sm:text-lg font-black text-blue-400 truncate max-w-[150px]">チームA</h2>
+                        <button id="btn-main-show-players-a" onclick="openPlayersListModal('A')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded-lg transition active:scale-95 border border-slate-600 hidden" title="選手一覧を表示">
+                            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+                        </button>
+                    </div>
                     <!-- スコア手動調整 -->
                     <div class="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-750">
                         <span class="text-[9px] sm:text-[10px] text-slate-400 font-bold">SCORE</span>
@@ -181,7 +186,12 @@
             <!-- チームB 操作パネル -->
             <div id="panel-team-b" class="bg-slate-800/90 border-t-4 border-red-500 rounded-2xl p-2.5 sm:p-4 shadow-lg flex flex-col gap-3">
                 <div class="flex justify-between items-center pb-1.5 border-b border-slate-700">
-                    <h2 id="label-team-b" class="text-base sm:text-lg font-black text-red-400 truncate max-w-[150px]">チームB</h2>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <h2 id="label-team-b" class="text-base sm:text-lg font-black text-red-400 truncate max-w-[150px]">チームB</h2>
+                        <button id="btn-main-show-players-b" onclick="openPlayersListModal('B')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-1.5 rounded-lg transition active:scale-95 border border-slate-600 hidden" title="選手一覧を表示">
+                            <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
+                        </button>
+                    </div>
                     <!-- スコア手動調整 -->
                     <div class="flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-750">
                         <span class="text-[9px] sm:text-[10px] text-slate-400 font-bold">SCORE</span>
@@ -283,6 +293,10 @@
                     <i data-lucide="pause-circle" class="w-3.5 h-3.5 text-slate-300"></i>
                     <span>中断</span>
                 </button>
+                <button onclick="recordEvent('共通', '再開', 1)" class="bg-slate-700 hover:bg-slate-600 active:scale-95 px-2.5 py-1.5 rounded-lg text-[10px] sm:text-[11px] font-bold transition flex items-center gap-1">
+                    <i data-lucide="play-circle" class="w-3.5 h-3.5 text-slate-300"></i>
+                    <span>再開</span>
+                </button>
             </div>
         </div>
 
@@ -304,7 +318,7 @@
                         <span>自動スクロール</span>
                     </label>
                     <label class="flex items-center gap-1 cursor-pointer hover:text-slate-200 transition">
-                        <input type="checkbox" id="chk-sort-newest" class="rounded bg-slate-900 border-slate-750 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5">
+                        <input type="checkbox" id="chk-sort-newest" checked class="rounded bg-slate-900 border-slate-750 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5">
                         <span>新着順</span>
                     </label>
                 </div>
@@ -963,6 +977,57 @@
             domBtnExportJson.addEventListener('click', exportToJSON);
             domBtnExportHtml.addEventListener('click', exportToHTML);
             domBtnClearAll.addEventListener('click', clearAllData);
+
+            // キーボードショートカット設定
+            document.addEventListener('keydown', (e) => {
+                // Escキーで閉じる
+                if (e.key === 'Escape' || e.key === 'Esc') {
+                    const confirmModal = document.getElementById('confirm-modal');
+                    if (confirmModal && !confirmModal.classList.contains('hidden')) {
+                        domConfirmModalHidden(true);
+                        if (confirmResolve) confirmResolve(false);
+                        e.preventDefault();
+                        return;
+                    }
+                    const playersListModal = document.getElementById('players-list-modal');
+                    if (playersListModal && !playersListModal.classList.contains('hidden')) {
+                        closePlayersListModal();
+                        e.preventDefault();
+                        return;
+                    }
+                    if (domMemoModal && !domMemoModal.classList.contains('hidden')) {
+                        closeMemoModal();
+                        e.preventDefault();
+                        return;
+                    }
+                    if (domSettingsModal && !domSettingsModal.classList.contains('hidden')) {
+                        closeSettingsModal();
+                        e.preventDefault();
+                        return;
+                    }
+                    if (domFullLogModal && !domFullLogModal.classList.contains('hidden')) {
+                        closeFullLogModal();
+                        e.preventDefault();
+                        return;
+                    }
+                }
+
+                // Command + Enter (または Ctrl + Enter) で決定・保存
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                    const confirmModal = document.getElementById('confirm-modal');
+                    if (confirmModal && !confirmModal.classList.contains('hidden')) {
+                        domConfirmModalHidden(true);
+                        if (confirmResolve) confirmResolve(true);
+                        e.preventDefault();
+                        return;
+                    }
+                    if (domMemoModal && !domMemoModal.classList.contains('hidden')) {
+                        saveActiveMemo();
+                        e.preventDefault();
+                        return;
+                    }
+                }
+            });
         }
 
         function applyTeamSettings() {
@@ -978,6 +1043,27 @@
             domPanelTeamB.style.borderTopColor = teamBColor;
             domLabelTeamB.style.color = teamBColor;
             domHeaderTeamB.style.color = teamBColor;
+
+            // 選手一覧ボタンのメイン画面側表示切替
+            const mainBtnA = document.getElementById('btn-main-show-players-a');
+            if (mainBtnA) {
+                if (Object.keys(playersA || {}).length > 0) {
+                    mainBtnA.classList.remove('hidden');
+                } else {
+                    mainBtnA.classList.add('hidden');
+                }
+            }
+            const mainBtnB = document.getElementById('btn-main-show-players-b');
+            if (mainBtnB) {
+                if (Object.keys(playersB || {}).length > 0) {
+                    mainBtnB.classList.remove('hidden');
+                } else {
+                    mainBtnB.classList.add('hidden');
+                }
+            }
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         }
 
         // --- 経過タイマーロジック ---
@@ -1382,6 +1468,7 @@
                     }
                 });
 
+                applyTeamSettings();
                 saveToStorage();
                 renderLogs();
                 showToast(`${team === 'A' ? 'チームA' : 'チームB'}の選手データを読み込みました`);
