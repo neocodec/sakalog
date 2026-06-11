@@ -370,7 +370,7 @@
     </footer>
 
     <!-- 📊 全画面ログ表示モーダル (アプリ内分析機能) -->
-    <div id="full-log-modal" class="fixed inset-0 bg-slate-900 z-[60] hidden flex-col font-sans">
+    <div id="full-log-modal" class="fixed inset-0 h-screen max-h-screen bg-slate-900 z-[60] hidden flex-col font-sans">
         <div class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between shadow-md">
             <div class="flex items-center gap-3">
                 <i data-lucide="table" class="text-emerald-400 w-5 h-5"></i>
@@ -382,14 +382,22 @@
         </div>
 
         <div class="p-4 bg-slate-850 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between border-b border-slate-700">
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <label for="full-star-filter" class="text-sm font-bold text-slate-400">表示フィルタ:</label>
                 <select id="full-star-filter" onchange="filterFullTable()" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm font-bold rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block px-3 py-1.5 cursor-pointer">
-                    <option value="0">すべてのログを表示</option>
+                    <option value="0">すべての重要度</option>
                     <option value="5">⭐️ 5のみ</option>
                     <option value="4">⭐️ 4以上</option>
                     <option value="3">⭐️ 3以上</option>
                     <option value="2">⭐️ 2以上</option>
+                </select>
+                <select id="full-period-filter" onchange="filterFullTable()" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm font-bold rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block px-3 py-1.5 cursor-pointer">
+                    <option value="すべて">すべての期間</option>
+                    <option value="前半">前半</option>
+                    <option value="後半">後半</option>
+                    <option value="延長前">延長前</option>
+                    <option value="延長後">延長後</option>
+                    <option value="PK戦">PK戦</option>
                 </select>
             </div>
             <div class="bg-slate-950 px-4 py-1.5 rounded-full border border-slate-700 text-sm sm:text-base font-mono flex items-center gap-3 shadow-inner">
@@ -399,9 +407,9 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-auto bg-slate-900 p-2 sm:p-4">
-            <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden h-full flex flex-col">
-                <div class="overflow-x-auto flex-1">
+        <div class="flex-1 min-h-0 bg-slate-900 p-2 sm:p-4 flex flex-col">
+            <div class="bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden flex-1 min-h-0 flex flex-col">
+                <div class="overflow-y-auto overflow-x-auto flex-1">
                     <table class="w-full text-left border-collapse min-w-[850px]">
                         <thead>
                             <tr class="bg-slate-950 text-slate-300 text-xs sm:text-sm uppercase tracking-wider border-b border-slate-700 sticky top-0 z-10">
@@ -694,6 +702,7 @@
         const domFullLogModal = document.getElementById('full-log-modal');
         const domFullTableBody = document.getElementById('full-table-body');
         const domFullStarFilter = document.getElementById('full-star-filter');
+        const domFullPeriodFilter = document.getElementById('full-period-filter');
 
         // 音声フィードバック用のAudioContext
         let audioCtx = null;
@@ -1545,17 +1554,22 @@
             document.getElementById('full-score').innerText = `${scoreA} - ${scoreB}`;
             
             domFullStarFilter.value = "0";
+            domFullPeriodFilter.value = "すべて";
             fullSortCol = -1;
             fullSortAsc = true;
             document.querySelectorAll('#full-log-modal th').forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
 
             renderFullLogTable();
             domFullLogModal.classList.remove('hidden');
+            domFullLogModal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
             lucide.createIcons();
         };
 
         window.closeFullLogModal = function() {
+            domFullLogModal.classList.remove('flex');
             domFullLogModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
         };
 
         function renderFullLogTable() {
@@ -1565,9 +1579,11 @@
             }
 
             const filterValue = parseInt(domFullStarFilter.value, 10);
+            const periodFilter = domFullPeriodFilter.value;
             
             let logsHtml = matchLogs.map((log, index) => {
                 if (filterValue > 0 && log.priority < filterValue) return '';
+                if (periodFilter !== 'すべて' && !log.gameTime.startsWith(periodFilter)) return '';
 
                 const stars = '★'.repeat(log.priority) + '☆'.repeat(5 - log.priority);
                 return `
@@ -1588,13 +1604,23 @@
 
         window.filterFullTable = function() {
             const filterValue = parseInt(domFullStarFilter.value, 10);
+            const periodFilter = domFullPeriodFilter.value;
             const rows = domFullTableBody.querySelectorAll('tr');
 
             rows.forEach(row => {
+                if (row.children.length === 1) return;
+                
                 const priorityCell = row.children[6];
                 if(!priorityCell) return;
                 const starCount = priorityCell.innerText.replace(/[^★]/g, '').length;
-                row.style.display = (filterValue === 0 || starCount >= filterValue) ? '' : 'none';
+                const isStarMatch = (filterValue === 0 || starCount >= filterValue);
+                
+                const timeCell = row.children[1];
+                if(!timeCell) return;
+                const timeText = timeCell.innerText;
+                const isPeriodMatch = (periodFilter === 'すべて' || timeText.startsWith(periodFilter));
+                
+                row.style.display = (isStarMatch && isPeriodMatch) ? '' : 'none';
             });
         };
 
@@ -1693,6 +1719,17 @@
                 selectedCountryA = "";
                 selectedCountryB = "";
                 
+                // チーム名とチームカラーをデフォルト値にリセット
+                teamAName = "チームA";
+                teamBName = "チームB";
+                teamAColor = "#3b82f6";
+                teamBColor = "#ef4444";
+                
+                domInputTeamA.value = "チームA";
+                domInputTeamB.value = "チームB";
+                domColorTeamA.value = "#3b82f6";
+                domColorTeamB.value = "#ef4444";
+                
                 const selectA = document.getElementById('select-country-a');
                 const selectB = document.getElementById('select-country-b');
                 if (selectA) selectA.value = "";
@@ -1714,6 +1751,7 @@
 
                 updateTimerDisplay();
                 updateTimerBtnUI();
+                applyTeamSettings(); // チーム設定をUIに反映
                 saveToStorage();
                 updateScoreUI();
                 renderLogs();
@@ -1807,14 +1845,22 @@
             </div>
         </div>
 
-        <div class="mb-4 flex items-center gap-3">
+        <div class="mb-4 flex flex-wrap items-center gap-3">
             <label for="star-filter" class="text-sm font-bold text-slate-400">表示フィルタ:</label>
             <select id="star-filter" onchange="filterTable()" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm font-bold rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block px-3 py-1.5 cursor-pointer">
-                <option value="0">すべてのログを表示</option>
+                <option value="0">すべての重要度</option>
                 <option value="5">⭐️ 5のみ</option>
                 <option value="4">⭐️ 4以上</option>
                 <option value="3">⭐️ 3以上</option>
                 <option value="2">⭐️ 2以上</option>
+            </select>
+            <select id="period-filter" onchange="filterTable()" class="bg-slate-800 border border-slate-700 text-slate-100 text-sm font-bold rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block px-3 py-1.5 cursor-pointer">
+                <option value="すべて">すべての期間</option>
+                <option value="前半">前半</option>
+                <option value="後半">後半</option>
+                <option value="延長前">延長前</option>
+                <option value="延長後">延長後</option>
+                <option value="PK戦">PK戦</option>
             </select>
         </div>
         
@@ -1875,13 +1921,21 @@
 
         function filterTable() {
             const filterValue = parseInt(document.getElementById('star-filter').value, 10);
+            const periodFilter = document.getElementById('period-filter').value;
             const tbody = document.getElementById('table-body');
             const rows = tbody.querySelectorAll('tr');
 
             rows.forEach(row => {
+                if (row.children.length === 1) return;
+                
                 const priorityCell = row.children[6].innerText;
                 const starCount = priorityCell.replace(/[^★]/g, '').length;
-                row.style.display = (filterValue === 0 || starCount >= filterValue) ? '' : 'none';
+                const isStarMatch = (filterValue === 0 || starCount >= filterValue);
+                
+                const timeCell = row.children[1].innerText;
+                const isPeriodMatch = (periodFilter === 'すべて' || timeCell.startsWith(periodFilter));
+                
+                row.style.display = (isStarMatch && isPeriodMatch) ? '' : 'none';
             });
         }
     <\/script>
