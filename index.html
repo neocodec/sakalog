@@ -492,6 +492,14 @@
                 </div>
 
                 <div class="space-y-2 border-t border-slate-855 pt-3">
+                    <span class="text-[11px] text-slate-400 font-bold">動作設定:</span>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-200">
+                        <input type="checkbox" id="chk-show-modal-on-record" class="rounded bg-slate-900 border-slate-750 text-emerald-500 focus:ring-emerald-500 w-4 h-4">
+                        <span>ボタン押下時に詳細入力画面を表示</span>
+                    </label>
+                </div>
+
+                <div class="space-y-2 border-t border-slate-855 pt-3">
                     <span class="text-[11px] text-slate-400 font-bold">データのエクスポート:</span>
                     <div class="grid grid-cols-3 gap-2">
                         <button id="btn-export-csv" class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white py-2 rounded-xl font-bold transition flex flex-col items-center justify-center gap-1 text-[10px]">
@@ -554,6 +562,59 @@
             
             <div class="flex justify-end pt-2 border-t border-slate-700">
                 <button onclick="closePlayersListModal()" class="bg-slate-750 hover:bg-slate-700 px-4 py-1.5 rounded-lg text-xs font-bold transition">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📝 新規記録入力モーダル -->
+    <div id="record-modal" class="fixed inset-0 bg-slate-955/80 backdrop-blur-sm flex items-center justify-center p-4 z-[65] hidden">
+        <div class="bg-slate-850 border border-slate-700 p-4 rounded-2xl max-w-md w-full shadow-2xl flex flex-col gap-3.5 animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+                <div class="flex items-center gap-2 text-emerald-400 font-extrabold text-sm sm:text-base">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    <span>プレーの記録</span>
+                </div>
+                <button onclick="closeRecordModal()" class="text-slate-400 hover:text-white p-1 rounded-lg transition active:scale-90">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="text-[11px] text-slate-400 bg-slate-900/60 p-2 rounded-lg border border-slate-750">
+                <span id="record-modal-time" class="font-mono text-emerald-400 font-extrabold">前半 00:00</span> | 
+                <span id="record-modal-team" class="font-bold text-slate-200">チームA</span> - 
+                <span id="record-modal-event" class="text-slate-100 font-semibold">ゴール⚽</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400 font-bold">ゼッケン (背番号):</label>
+                    <div id="record-modal-player-container">
+                        <!-- 動的にセレクトボックスかテキスト入力を挿入 -->
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="block text-[11px] text-slate-400 font-bold text-center">優先度 (重要度):</label>
+                    <div class="flex gap-1 justify-center items-center h-8" id="record-modal-stars-container">
+                        <!-- 星ボタンを動的に表示 -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block text-[11px] text-slate-400 font-bold">詳細メモ (状況など):</label>
+                <textarea id="record-modal-textarea" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none font-sans" placeholder="状況をメモ（例: ショートカウンターからシュート）"></textarea>
+            </div>
+
+            <div class="space-y-1">
+                <span class="text-[11px] text-slate-400 font-bold">1タップで追加できるタグ:</span>
+                <div class="flex flex-wrap gap-1" id="record-modal-tags-container">
+                    <!-- タグリストを動的に表示 -->
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-700">
+                <button onclick="closeRecordModal()" class="bg-slate-750 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-bold transition">キャンセル</button>
+                <button id="record-modal-save-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-1.5 rounded-lg text-xs font-bold transition">記録する</button>
             </div>
         </div>
     </div>
@@ -644,6 +705,10 @@
         // メモ編集用の状態
         let activeMemoLogId = null;
 
+        // 動作設定
+        let showModalOnRecord = true;
+        let pendingRecord = null;
+
         // ピリオドの定義
         const PERIODS = ["前半", "後半", "延長前", "延長後", "PK戦"];
 
@@ -697,6 +762,17 @@
         const domMemoModalTextarea = document.getElementById('memo-modal-textarea');
         const domMemoModalTagsContainer = document.getElementById('memo-modal-tags-container');
         const domMemoModalSaveBtn = document.getElementById('memo-modal-save-btn');
+
+        const domChkShowModalOnRecord = document.getElementById('chk-show-modal-on-record');
+        const domRecordModal = document.getElementById('record-modal');
+        const domRecordModalTime = document.getElementById('record-modal-time');
+        const domRecordModalTeam = document.getElementById('record-modal-team');
+        const domRecordModalEvent = document.getElementById('record-modal-event');
+        const domRecordModalPlayerContainer = document.getElementById('record-modal-player-container');
+        const domRecordModalStarsContainer = document.getElementById('record-modal-stars-container');
+        const domRecordModalTextarea = document.getElementById('record-modal-textarea');
+        const domRecordModalTagsContainer = document.getElementById('record-modal-tags-container');
+        const domRecordModalSaveBtn = document.getElementById('record-modal-save-btn');
 
         // 全画面表示用 DOM
         const domFullLogModal = document.getElementById('full-log-modal');
@@ -1004,6 +1080,23 @@
 
             domMemoModalSaveBtn.addEventListener('click', saveActiveMemo);
 
+            if (domChkShowModalOnRecord) {
+                domChkShowModalOnRecord.addEventListener('change', () => {
+                    showModalOnRecord = domChkShowModalOnRecord.checked;
+                    saveToStorage();
+                });
+            }
+
+            if (domRecordModalSaveBtn) {
+                domRecordModalSaveBtn.addEventListener('click', savePendingRecord);
+            }
+
+            if (domRecordModal) {
+                domRecordModal.addEventListener('click', (e) => {
+                    if (e.target === domRecordModal) closeRecordModal();
+                });
+            }
+
             domBtnTimerToggle.addEventListener('click', handleTimerBtnClick);
             domBtnTimerReset.addEventListener('click', resetTimer);
             domPeriodSelect.addEventListener('change', updateTimerBtnUI);
@@ -1037,6 +1130,11 @@
                         e.preventDefault();
                         return;
                     }
+                    if (domRecordModal && !domRecordModal.classList.contains('hidden')) {
+                        closeRecordModal();
+                        e.preventDefault();
+                        return;
+                    }
                     if (domSettingsModal && !domSettingsModal.classList.contains('hidden')) {
                         closeSettingsModal();
                         e.preventDefault();
@@ -1060,6 +1158,11 @@
                     }
                     if (domMemoModal && !domMemoModal.classList.contains('hidden')) {
                         saveActiveMemo();
+                        e.preventDefault();
+                        return;
+                    }
+                    if (domRecordModal && !domRecordModal.classList.contains('hidden')) {
+                        savePendingRecord();
                         e.preventDefault();
                         return;
                     }
@@ -1197,11 +1300,6 @@
             playBeep(teamCode);
             playVibrate(teamCode);
 
-            if (eventName === 'ゴール⚽') {
-                if (teamCode === 'A') changeScore('A', 1);
-                else if (teamCode === 'B') changeScore('B', 1);
-            }
-
             let targetTeamName = "全体/共通";
             let color = "#64748b";
             
@@ -1215,10 +1313,29 @@
 
             const now = new Date();
             const realTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            const gameTime = getFormattedGameTime();
+
+            if (showModalOnRecord && teamCode !== '共通') {
+                openRecordModal({
+                    gameTime: gameTime,
+                    realTime: realTime,
+                    teamCode: teamCode,
+                    teamName: targetTeamName,
+                    teamColor: color,
+                    eventName: eventName,
+                    priority: defaultPriority
+                });
+                return;
+            }
+
+            if (eventName === 'ゴール⚽') {
+                if (teamCode === 'A') changeScore('A', 1);
+                else if (teamCode === 'B') changeScore('B', 1);
+            }
 
             const newLog = {
                 id: Date.now() + Math.random().toString(36).substr(2, 5),
-                gameTime: getFormattedGameTime(),
+                gameTime: gameTime,
                 realTime: realTime,
                 teamCode: teamCode,
                 teamName: targetTeamName,
@@ -1240,6 +1357,148 @@
             } else if (domChkAutoScroll.checked && domChkSortNewest.checked) {
                 setTimeout(() => { domLogContainer.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
             }
+        }
+
+        // --- 新規記録モーダル関連 ---
+        window.openRecordModal = function(recordData) {
+            pendingRecord = recordData;
+            pendingRecord.playerNumber = "";
+            pendingRecord.memo = "";
+
+            domRecordModalTime.innerText = pendingRecord.gameTime;
+            domRecordModalTeam.innerText = pendingRecord.teamName;
+            domRecordModalEvent.innerText = pendingRecord.eventName;
+            domRecordModalTextarea.value = "";
+
+            // ゼッケン入力の構築
+            const playersMap = pendingRecord.teamCode === 'A' ? playersA : (pendingRecord.teamCode === 'B' ? playersB : {});
+            const playerNums = Object.keys(playersMap).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            if (playerNums.length > 0) {
+                let optionsHtml = `<option value="">選択してください</option>`;
+                playerNums.forEach(num => {
+                    const p = playersMap[num];
+                    optionsHtml += `<option value="${num}">${num} - ${p.name} (${p.position})</option>`;
+                });
+                domRecordModalPlayerContainer.innerHTML = `
+                    <select id="record-modal-player-select" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-100 font-bold focus:outline-none focus:border-emerald-500">
+                        ${optionsHtml}
+                    </select>
+                `;
+            } else {
+                domRecordModalPlayerContainer.innerHTML = `
+                    <input type="text" id="record-modal-player-input" inputmode="numeric" pattern="[0-9]*" placeholder="No. (手動入力)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-bold">
+                `;
+            }
+
+            // 優先度の星構築
+            renderRecordModalStars(pendingRecord.priority);
+
+            // タグの構築
+            domRecordModalTagsContainer.innerHTML = QUICK_TAGS.map(tag => `
+                <button onclick="addTagToRecordMemo('${tag}')" class="bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 border border-slate-650 px-2 py-1 rounded-lg text-[10px] font-semibold transition">
+                    + ${tag}
+                </button>
+            `).join('');
+
+            domRecordModal.classList.remove('hidden');
+            setTimeout(() => {
+                const input = document.getElementById('record-modal-player-input');
+                if (input) input.focus();
+                else {
+                    const select = document.getElementById('record-modal-player-select');
+                    if (select) select.focus();
+                }
+            }, 100);
+        };
+
+        window.closeRecordModal = function() {
+            domRecordModal.classList.add('hidden');
+            pendingRecord = null;
+        };
+
+        window.renderRecordModalStars = function(priority) {
+            let starsHtml = "";
+            for (let i = 1; i <= 5; i++) {
+                const activeClass = i <= priority ? 'text-amber-400 fill-amber-400' : 'text-slate-600';
+                starsHtml += `
+                    <button onclick="setRecordPriority(${i})" class="focus:outline-none hover:scale-125 transition">
+                        <svg class="w-5 h-5 ${activeClass}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                    </button>
+                `;
+            }
+            domRecordModalStarsContainer.innerHTML = starsHtml;
+        };
+
+        window.setRecordPriority = function(priority) {
+            if (pendingRecord) {
+                pendingRecord.priority = priority;
+                renderRecordModalStars(priority);
+            }
+        };
+
+        window.addTagToRecordMemo = function(tag) {
+            const cursorStart = domRecordModalTextarea.selectionStart;
+            const cursorEnd = domRecordModalTextarea.selectionEnd;
+            const text = domRecordModalTextarea.value;
+
+            const beforeText = text.substring(0, cursorStart);
+            const afterText = text.substring(cursorEnd, text.length);
+            const space = (beforeText && !beforeText.endsWith(' ')) ? ' ' : '';
+
+            domRecordModalTextarea.value = beforeText + space + tag + afterText;
+            domRecordModalTextarea.focus();
+            
+            const newCursorPos = cursorStart + space.length + tag.length;
+            domRecordModalTextarea.setSelectionRange(newCursorPos, newCursorPos);
+        };
+
+        function savePendingRecord() {
+            if (!pendingRecord) return;
+
+            // ゼッケン情報の取得
+            let playerNum = "";
+            const select = document.getElementById('record-modal-player-select');
+            const input = document.getElementById('record-modal-player-input');
+            if (select) {
+                playerNum = select.value;
+            } else if (input) {
+                playerNum = input.value.trim();
+            }
+
+            pendingRecord.playerNumber = playerNum;
+            if (playerNum) {
+                const map = pendingRecord.teamCode === 'A' ? playersA : (pendingRecord.teamCode === 'B' ? playersB : {});
+                const player = map[playerNum];
+                if (player) {
+                    pendingRecord.playerName = player.name || "";
+                    pendingRecord.playerPosition = player.position || "";
+                }
+            }
+
+            pendingRecord.memo = domRecordModalTextarea.value.trim();
+            pendingRecord.id = Date.now() + Math.random().toString(36).substr(2, 5);
+
+            // ゴール時のスコア自動加算
+            if (pendingRecord.eventName === 'ゴール⚽') {
+                if (pendingRecord.teamCode === 'A') changeScore('A', 1);
+                else if (pendingRecord.teamCode === 'B') changeScore('B', 1);
+            }
+
+            matchLogs.push(pendingRecord);
+            saveToStorage();
+            renderLogs();
+            showToast(`「${pendingRecord.teamName} - ${pendingRecord.eventName}」を記録しました`);
+
+            if (domChkAutoScroll.checked && !domChkSortNewest.checked) {
+                setTimeout(() => { domLogContainer.scrollTo({ top: domLogContainer.scrollHeight, behavior: 'smooth' }); }, 100);
+            } else if (domChkAutoScroll.checked && domChkSortNewest.checked) {
+                setTimeout(() => { domLogContainer.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
+            }
+
+            closeRecordModal();
         }
 
         // --- ログリストレンダリング ---
@@ -1679,7 +1938,8 @@
                 teamAName, teamBName, teamAColor, teamBColor,
                 scoreA, scoreB, matchLogs,
                 playersA, playersB,
-                selectedCountryA, selectedCountryB
+                selectedCountryA, selectedCountryB,
+                showModalOnRecord
             };
             localStorage.setItem('soccer_digest_data_v1', JSON.stringify(dataToSave));
         }
@@ -1700,11 +1960,16 @@
                     playersB = data.playersB || {};
                     selectedCountryA = data.selectedCountryA || "";
                     selectedCountryB = data.selectedCountryB || "";
+                    showModalOnRecord = data.showModalOnRecord !== undefined ? data.showModalOnRecord : true;
 
                     domInputTeamA.value = teamAName;
                     domInputTeamB.value = teamBName;
                     domColorTeamA.value = teamAColor;
                     domColorTeamB.value = teamBColor;
+
+                    if (domChkShowModalOnRecord) {
+                        domChkShowModalOnRecord.checked = showModalOnRecord;
+                    }
 
                     // 選手データの読み込み状態をラベルに反映
                     const countA = Object.keys(playersA).length;
