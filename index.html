@@ -832,7 +832,7 @@
         // --- システム・ヘルパー処理 ---
 
         // 心地よいBeep音を鳴らす関数 (サイン波 + アタック/リリース)
-        function playBeep() {
+        function playBeep(teamCode) {
             try {
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -847,28 +847,49 @@
                 const gainNode = audioCtx.createGain();
 
                 oscillator.type = 'sine';
-                // 少し低めで柔らかい音 (600Hz)
-                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                
+                // チームによって音色（周波数）を変更する
+                let frequency = 600; // デフォルト (共通など)
+                let duration = 0.15;
+                
+                if (teamCode === 'A') {
+                    frequency = 800; // チームAは少し高めの爽やかな音
+                    duration = 0.12;
+                } else if (teamCode === 'B') {
+                    frequency = 480; // チームBは少し低めの力強い音
+                    duration = 0.18;
+                }
+
+                oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
                 
                 // 音量エンベロープ（アタックを少し丸め、リリースを自然にフェードアウト）
                 gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.02); // 立ち上がり
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); // フェードアウト
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration); // フェードアウト
 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
 
                 oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.15);
+                oscillator.stop(audioCtx.currentTime + duration);
             } catch (e) {
                 console.error("Beep音の再生に失敗しました:", e);
             }
         }
 
-        // 確実なバイブレーション (タタッという短いダブルタップ)
-        function playVibrate() {
+        // 確実なバイブレーション (チームごとに異なる、より分かりやすい振動パターン)
+        function playVibrate(teamCode) {
             if ('vibrate' in navigator) {
-                navigator.vibrate([40, 30, 40]);
+                if (teamCode === 'A') {
+                    // チームA: トントンと小気味よく2回振動
+                    navigator.vibrate([70, 50, 70]);
+                } else if (teamCode === 'B') {
+                    // チームB: ズドンと長めに1回しっかり振動
+                    navigator.vibrate([150]);
+                } else {
+                    // 共通: トトトンと3回振動
+                    navigator.vibrate([50, 40, 50, 40, 50]);
+                }
             }
         }
 
@@ -1173,8 +1194,8 @@
         // --- プレー登録＆自動加算 ---
         function recordEvent(teamCode, eventName, defaultPriority = 3) {
             // フィードバック実行
-            playBeep();
-            playVibrate();
+            playBeep(teamCode);
+            playVibrate(teamCode);
 
             if (eventName === 'ゴール⚽') {
                 if (teamCode === 'A') changeScore('A', 1);
