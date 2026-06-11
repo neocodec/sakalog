@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>サッカーダイジェストログ</title>
+    <title>サカログ</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (SVGアイコン用) -->
@@ -333,7 +333,7 @@
 
     <!-- フッター -->
     <footer class="bg-slate-950 text-slate-650 text-[10px] py-4 border-t border-slate-900 text-center px-4 mt-auto w-full">
-        <p>サカログ | ©︎n.e.o</p>
+        <p>サカログ | ©︎n.e.o 2026</p>
     </footer>
 
     <!-- ⚙️ 設定・書き出しモーダル -->
@@ -454,8 +454,8 @@
         </div>
     </div>
 
-    <!-- 通知モーダル -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-slate-100 border-l-4 border-emerald-500 px-4 py-2.5 rounded-xl shadow-2xl transition-all transform translate-y-20 opacity-0 pointer-events-none flex items-center gap-2.5 z-50">
+    <!-- 通知モーダル (右上へ変更) -->
+    <div id="toast" class="fixed top-20 right-5 bg-slate-800 text-slate-100 border-l-4 border-emerald-500 px-4 py-2.5 rounded-xl shadow-2xl transition-all transform -translate-y-10 opacity-0 pointer-events-none flex items-center gap-2.5 z-50">
         <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
         <span id="toast-message" class="text-xs sm:text-sm font-semibold">記録しました</span>
     </div>
@@ -534,6 +534,9 @@
         const domMemoModalTagsContainer = document.getElementById('memo-modal-tags-container');
         const domMemoModalSaveBtn = document.getElementById('memo-modal-save-btn');
 
+        // 音声フィードバック用のAudioContext
+        let audioCtx = null;
+
         // --- 初期設定 ---
         window.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
@@ -548,6 +551,46 @@
         });
 
         // --- システム・ヘルパー処理 ---
+        // Beep音を鳴らす関数
+        function playBeep() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // 初回のみサスペンド状態を解除
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.type = 'sine';
+                // 短く高い音で邪魔にならないように調整
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                
+                // 音量減衰 (0.1秒でフェードアウト)
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch (e) {
+                console.error("Beep音の再生に失敗しました:", e);
+            }
+        }
+
+        // バイブレーションを鳴らす関数
+        function playVibrate() {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(30); // 30ミリ秒の短い振動
+            }
+        }
+
         function startRealTimeClock() {
             const timeEl = document.getElementById('current-real-time');
             const updateClock = () => {
@@ -742,6 +785,10 @@
 
         // --- プレー登録＆自動加算 ---
         function recordEvent(teamCode, eventName, defaultPriority = 3) {
+            // フィードバック実行
+            playBeep();
+            playVibrate();
+
             if (eventName === 'ゴール⚽') {
                 if (teamCode === 'A') changeScore('A', 1);
                 else if (teamCode === 'B') changeScore('B', 1);
@@ -1179,12 +1226,13 @@
 
         function showToast(message) {
             domToastMessage.innerText = message;
-            domToast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            // 右上からのスライドダウンアニメーションに変更
+            domToast.classList.remove('-translate-y-10', 'opacity-0', 'pointer-events-none');
             domToast.classList.add('translate-y-0', 'opacity-100');
 
             setTimeout(() => {
                 domToast.classList.remove('translate-y-0', 'opacity-100');
-                domToast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                domToast.classList.add('-translate-y-10', 'opacity-0', 'pointer-events-none');
             }, 2500);
         }
     </script>
