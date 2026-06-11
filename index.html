@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>サカログ</title>
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="サカログ">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (SVGアイコン用) -->
@@ -1901,6 +1908,15 @@
                 domToast.classList.remove('translate-y-0', 'opacity-100');
                 domToast.classList.add('-translate-y-10', 'opacity-0', 'pointer-events-none');
             }, 2500);
+        }
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((reg) => console.log('Service Worker registered successfully with scope:', reg.scope))
+                    .catch((err) => console.error('Service Worker registration failed:', err));
+            });
         }
     </script>
 </body>
