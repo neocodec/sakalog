@@ -56,6 +56,11 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         }
 
+        // Cloudflare等の環境下で、リダイレクトされたレスポンスはセキュリティ制約上キャッシュできないため除外
+        if (networkResponse.redirected) {
+          return networkResponse;
+        }
+
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
@@ -63,7 +68,11 @@ self.addEventListener('fetch', (event) => {
 
         return networkResponse;
       }).catch((err) => {
-        console.error('[Service Worker] Fetch failed; returning offline fallback if available.', err);
+        console.error('[Service Worker] Fetch failed:', err);
+        // 画面遷移（ナビゲーション）のリクエストが失敗した場合は、キャッシュから index.html を返す
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html') || caches.match('./');
+        }
       });
     })
   );
