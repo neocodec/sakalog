@@ -791,6 +791,138 @@ window.playersDataMaster = {
       "club": "オークランドFC"
     }
   },
+  "韓国": {
+    "1": {
+      "name": "キム・スンギュ",
+      "position": "GK",
+      "club": "FC東京"
+    },
+    "12": {
+      "name": "ソン・ボムグン",
+      "position": "GK",
+      "club": "全北現代"
+    },
+    "21": {
+      "name": "チョ・ヒョヌ",
+      "position": "GK",
+      "club": "蔚山HD"
+    },
+    "2": {
+      "name": "イ・ハンボム",
+      "position": "DF",
+      "club": "ミッティラン"
+    },
+    "4": {
+      "name": "キム・ミンジェ",
+      "position": "DF",
+      "club": "バイエルン"
+    },
+    "5": {
+      "name": "キム・テヒョン",
+      "position": "DF",
+      "club": "鹿島アントラーズ"
+    },
+    "13": {
+      "name": "イ・テソク",
+      "position": "DF",
+      "club": "オーストリア・ウィーン"
+    },
+    "14": {
+      "name": "チョ・ウィジェ",
+      "position": "DF",
+      "club": "全北現代"
+    },
+    "15": {
+      "name": "キム・ムンファン",
+      "position": "DF",
+      "club": "大田ハナシチズン"
+    },
+    "16": {
+      "name": "パク・ジンソプ",
+      "position": "DF",
+      "club": "浙江FC"
+    },
+    "22": {
+      "name": "ソル・ヨンウ",
+      "position": "DF",
+      "club": "ツルヴェナ・ズヴェズダ"
+    },
+    "23": {
+      "name": "イェンス・カストロップ",
+      "position": "DF",
+      "club": "ボルシアMG"
+    },
+    "3": {
+      "name": "イ・ギヒョク",
+      "position": "MF",
+      "club": "江原FC"
+    },
+    "6": {
+      "name": "ファン・インボム",
+      "position": "MF",
+      "club": "フェイエノールト"
+    },
+    "8": {
+      "name": "ペク・スンホ",
+      "position": "MF",
+      "club": "バーミンガム・シティ"
+    },
+    "10": {
+      "name": "イ・ジェソン",
+      "position": "MF",
+      "club": "マインツ"
+    },
+    "11": {
+      "name": "ファン・ヒチャン",
+      "position": "MF",
+      "club": "ウォルヴァーハンプトン"
+    },
+    "17": {
+      "name": "ペ・ジュノ",
+      "position": "MF",
+      "club": "ストーク・シティ"
+    },
+    "19": {
+      "name": "イ・ガンイン",
+      "position": "MF",
+      "club": "パリ・サンジェルマン"
+    },
+    "20": {
+      "name": "ヤン・ヒョンジュン",
+      "position": "MF",
+      "club": "セルティック"
+    },
+    "24": {
+      "name": "キム・ジンギュ",
+      "position": "MF",
+      "club": "全北現代"
+    },
+    "25": {
+      "name": "オム・ジソン",
+      "position": "MF",
+      "club": "スウォンジー・シティ"
+    },
+    "26": {
+      "name": "イ・ドンギョン",
+      "position": "MF",
+      "club": "蔚山HD"
+    },
+    "7": {
+      "name": "ソン・フンミン",
+      "position": "FW",
+      "club": "ロサンゼルスFC"
+    },
+    "9": {
+      "name": "チョ・ギュソン",
+      "position": "FW",
+      "club": "ミッティラン"
+    },
+    "18": {
+      "name": "オ・ヒョンギュ",
+      "position": "FW",
+      "club": "ベシクタシュ"
+    }
+  },
   "カーボベルデ": {
     "1": {
       "name": "ヴォジーニャ",
